@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:fslogger/database/database_helper.dart';
 import '../models/flight_log.dart';
+import 'package:fslogger/utils/applocalizations.dart'; // Import your localization utility
 
 class ViewFlightLogsPage extends StatefulWidget {
   @override
@@ -42,22 +43,23 @@ class _ViewFlightLogsPageState extends State<ViewFlightLogsPage> {
   }
 
   void _showDeleteConfirmationDialog(int id) {
+    final localizations = AppLocalizations.of(context);
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('Delete Flight Log'),
-        content: const Text('Are you sure you want to delete this flight log?'),
+        title: Text(localizations?.translate('delete_flight_log') ?? 'Delete Flight Log'),
+        content: Text(localizations?.translate('delete_flight_log_confirmation') ?? 'Are you sure you want to delete this flight log?'),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(context).pop(),
-            child: const Text('Cancel'),
+            child: Text(localizations?.translate('cancel') ?? 'Cancel'),
           ),
           ElevatedButton(
             onPressed: () {
               _deleteFlightLog(id);
               Navigator.of(context).pop();
             },
-            child: const Text('Delete'),
+            child: Text(localizations?.translate('delete') ?? 'Delete'),
           ),
         ],
       ),
@@ -66,16 +68,17 @@ class _ViewFlightLogsPageState extends State<ViewFlightLogsPage> {
 
   @override
   Widget build(BuildContext context) {
+    final localizations = AppLocalizations.of(context);
     return Scaffold(
       appBar: AppBar(
-        title: const Text('View Flight Logs'),
+        title: Text(localizations?.translate('view_flight_logs') ?? 'View Flight Logs'),
       ),
       body: Column(
         children: [
           Padding(
             padding: const EdgeInsets.all(16.0),
             child: Text(
-              'Total Flight Hours: ${_formatDuration(_totalFlightMinutes)}',
+              '${localizations?.translate('total_flight_hours') ?? 'Total Flight Hours'}: ${_formatDuration(_totalFlightMinutes)}',
               style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
             ),
           ),
@@ -87,7 +90,7 @@ class _ViewFlightLogsPageState extends State<ViewFlightLogsPage> {
                 return ListTile(
                   title: Text('${flightLog.date.toLocal()} - ${flightLog.aircraftId}'),
                   subtitle: Text(
-                      'Duration: ${flightLog.duration} minutes\nDeparture: ${flightLog.departureAirport}\nArrival: ${flightLog.arrivalAirport}'),
+                      '${localizations?.translate('duration') ?? 'Duration'}: ${flightLog.duration} ${localizations?.translate('minutes') ?? 'minutes'}\n${localizations?.translate('departure') ?? 'Departure'}: ${flightLog.departureAirport}\n${localizations?.translate('arrival') ?? 'Arrival'}: ${flightLog.arrivalAirport}'),
                   trailing: Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [

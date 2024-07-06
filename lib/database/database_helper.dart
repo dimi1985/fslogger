@@ -15,6 +15,7 @@ class DatabaseHelper {
     return _database!;
   }
 
+
   Future<Database> _initDatabase() async {
     final path = await getDatabasesPath();
     final databasePath = join(path, 'flight_log_database.db');
@@ -106,5 +107,19 @@ class DatabaseHelper {
       where: 'id = ?',
       whereArgs: [id],
     );
+  }
+  Future<void> insertOrUpdateFlightLog(FlightLog log) async {
+  var existingLog = await getFlightLogById(log.id ?? 0);
+  if (existingLog == null) {
+    await insertFlightLog(log);
+  } else {
+    await updateFlightLog(log);
+  }
+}
+
+  Future<FlightLog?> getFlightLogById(int id) async {
+    final db = await database;
+    var res = await db.query("flightLogs", where: "id = ?", whereArgs: [id]);
+    return res.isNotEmpty ? FlightLog.fromMap(res.first) : null;
   }
 }

@@ -1,9 +1,8 @@
-// ignore_for_file: library_private_types_in_public_api
-
 import 'package:flutter/material.dart';
 import 'package:fslogger/database/aircraft_database_helper.dart';
 import 'package:fslogger/models/aircraft.dart';
 import 'add_aircraft_page.dart';
+import 'package:fslogger/utils/applocalizations.dart';  // Import your localization utility
 
 class AircraftListPage extends StatefulWidget {
   const AircraftListPage({super.key});
@@ -39,19 +38,21 @@ class _AircraftListPageState extends State<AircraftListPage> {
 
   @override
   Widget build(BuildContext context) {
+    final localizations = AppLocalizations.of(context);
+
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Aircraft List'),
+        title: Text(localizations?.translate('aircraft_list') ?? 'Aircraft List'),
       ),
       body: _aircraftList.isEmpty
-          ? Center(child: Text('No aircraft found. Please add an aircraft.'))
+          ? Center(child: Text(localizations?.translate('no_aircraft_found') ?? 'No aircraft found. Please add an aircraft.'))
           : ListView.builder(
               itemCount: _aircraftList.length,
               itemBuilder: (context, index) {
                 final aircraft = _aircraftList[index];
                 return ListTile(
                   title: Text(aircraft.type),
-                  subtitle: Text('Max Speed: ${aircraft.maxSpeed} knots'),
+                  subtitle: Text('${localizations?.translate('max_speed') ?? "Max Speed"}: ${aircraft.maxSpeed} knots'),
                 );
               },
             ),

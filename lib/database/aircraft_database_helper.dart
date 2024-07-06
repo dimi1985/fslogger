@@ -15,6 +15,7 @@ class AircraftDatabaseHelper {
     return _database!;
   }
 
+
   Future<Database> _initDatabase() async {
     final path = await getDatabasesPath();
     final databasePath = join(path, 'aircraft_database.db');
@@ -96,4 +97,22 @@ class AircraftDatabaseHelper {
       whereArgs: [id],
     );
   }
+
+  
+
+  Future<void> insertOrUpdateAircraft(Aircraft aircraft) async {
+  var existingAircraft = await getAircraftById(aircraft.id ?? 0);
+  if (existingAircraft == null) {
+    await insertAircraft(aircraft);
+  } else {
+    await updateAircraft(aircraft);
+  }
+}
+
+ Future<Aircraft?> getAircraftById(int id) async {
+    final db = await database;
+    var res = await db.query("aircraft", where: "id = ?", whereArgs: [id]);
+    return res.isNotEmpty ? Aircraft.fromMap(res.first) : null;
+  }
+
 }
