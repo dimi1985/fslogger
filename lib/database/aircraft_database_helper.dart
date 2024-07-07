@@ -15,14 +15,13 @@ class AircraftDatabaseHelper {
     return _database!;
   }
 
-
   Future<Database> _initDatabase() async {
     final path = await getDatabasesPath();
     final databasePath = join(path, 'aircraft_database.db');
 
     return await openDatabase(
       databasePath,
-      version: 2, // Increment version number
+      version: 4,  // Updated version
       onCreate: (db, version) async {
         await db.execute('''
           CREATE TABLE aircraft (
@@ -45,21 +44,19 @@ class AircraftDatabaseHelper {
             range REAL NOT NULL,
             maxCrosswindComponent REAL NOT NULL,
             maxTailwindComponent REAL NOT NULL,
-            maxWindGusts REAL NOT NULL
-          )
+            maxWindGusts REAL NOT NULL,
+            isMilitary INTEGER NOT NULL DEFAULT 0,
+            parkingAirport TEXT NOT NULL,
+            hoursFlown REAL NOT NULL DEFAULT 0.0
+          );
         ''');
       },
       onUpgrade: (db, oldVersion, newVersion) async {
-        if (oldVersion < 2) {
-          await db.execute('''
-            ALTER TABLE aircraft ADD COLUMN maxCrosswindComponent REAL NOT NULL DEFAULT 15.0;
-          ''');
-          await db.execute('''
-            ALTER TABLE aircraft ADD COLUMN maxTailwindComponent REAL NOT NULL DEFAULT 10.0;
-          ''');
-          await db.execute('''
-            ALTER TABLE aircraft ADD COLUMN maxWindGusts REAL NOT NULL DEFAULT 15.0;
-          ''');
+        if (oldVersion < 4) {
+          // Execute additional SQL scripts when upgrading from version 2 to version 3
+          await db.execute('ALTER TABLE aircraft ADD COLUMN isMilitary INTEGER NOT NULL DEFAULT 0');
+          await db.execute('ALTER TABLE aircraft ADD COLUMN parkingAirport TEXT NOT NULL');
+          await db.execute('ALTER TABLE aircraft ADD COLUMN hoursFlown REAL NOT NULL DEFAULT 0.0');
         }
       },
     );

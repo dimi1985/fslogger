@@ -196,7 +196,7 @@ class _HomePageState extends State<HomePage> {
                 'Aircraft',
           ),
         ],
-        selectedItemColor: Colors.deepPurple,
+        // selectedItemColor: Colors.deepPurple,
         onTap: (index) {
           switch (index) {
             case 0:

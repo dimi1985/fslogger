@@ -1,24 +1,27 @@
 class Aircraft {
   int? id;
   String type;
-  double rateOfClimb; // in feet per minute
-  double maxSpeed; // in knots
-  double normalCruiseSpeed; // in knots
-  double maxTakeoffWeight; // in pounds
-  double operatingWeight; // in pounds
-  double emptyWeight; // in pounds
-  double fuelCapacity; // in gallons
-  double payloadUseful; // in pounds
-  double payloadWithFullFuel; // in pounds
-  double maxPayload; // in pounds
-  double serviceCeiling; // in feet
-  double takeoffDistance; // in feet
-  double balancedFieldLength; // in feet
-  double landingDistance; // in feet
-  double range; // in nautical miles
-  double maxCrosswindComponent; // in knots
-  double maxTailwindComponent; // in knots
-  double maxWindGusts; // in knots
+  double rateOfClimb;
+  double maxSpeed;
+  double normalCruiseSpeed;
+  double maxTakeoffWeight;
+  double operatingWeight;
+  double emptyWeight;
+  double fuelCapacity;
+  double payloadUseful;
+  double payloadWithFullFuel;
+  double maxPayload;
+  double serviceCeiling;
+  double takeoffDistance;
+  double balancedFieldLength;
+  double landingDistance;
+  double range;
+  double maxCrosswindComponent;
+  double maxTailwindComponent;
+  double maxWindGusts;
+  bool isMilitary; // Added to differentiate between military and civilian aircraft
+  double hoursFlown; // Added to track total flight hours
+  String parkingAirport; // Added to track current parking location
 
   Aircraft({
     this.id,
@@ -41,6 +44,9 @@ class Aircraft {
     required this.maxCrosswindComponent,
     required this.maxTailwindComponent,
     required this.maxWindGusts,
+    required this.isMilitary,
+    required this.hoursFlown,
+    required this.parkingAirport,
   });
 
   Map<String, dynamic> toMap() {
@@ -65,6 +71,9 @@ class Aircraft {
       'maxCrosswindComponent': maxCrosswindComponent,
       'maxTailwindComponent': maxTailwindComponent,
       'maxWindGusts': maxWindGusts,
+      'isMilitary': isMilitary ? 1 : 0,  // Convert boolean to integer
+      'hoursFlown': hoursFlown,
+      'parkingAirport': parkingAirport,
     };
   }
 
@@ -90,6 +99,9 @@ class Aircraft {
       maxCrosswindComponent: (map['maxCrosswindComponent'] as num?)?.toDouble() ?? 0.0,
       maxTailwindComponent: (map['maxTailwindComponent'] as num?)?.toDouble() ?? 0.0,
       maxWindGusts: (map['maxWindGusts'] as num?)?.toDouble() ?? 0.0,
+       isMilitary: map['isMilitary'] == 1,  // Convert integer to boolean
+      hoursFlown: (map['hoursFlown'] as num?)?.toDouble() ?? 0.0,
+      parkingAirport: map['parkingAirport'] as String? ?? 'Unknown',
     );
   }
 }

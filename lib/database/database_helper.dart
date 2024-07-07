@@ -22,7 +22,7 @@ class DatabaseHelper {
 
     return await openDatabase(
       databasePath,
-      version: 3,
+      version: 4,
       onCreate: (db, version) async {
         await db.execute('''
           CREATE TABLE aircraft (
@@ -64,7 +64,7 @@ class DatabaseHelper {
         ''');
       },
       onUpgrade: (db, oldVersion, newVersion) async {
-        if (oldVersion < 3) {
+        if (oldVersion < 4) {
           await db.execute('''
             ALTER TABLE flightLogs ADD COLUMN route TEXT;
           ''');

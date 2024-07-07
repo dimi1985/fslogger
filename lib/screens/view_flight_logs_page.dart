@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:fslogger/database/database_helper.dart';
 import 'package:fslogger/models/flight_log.dart';
 import 'package:fslogger/utils/applocalizations.dart';
+import 'package:fslogger/utils/firebase_service.dart';
 import 'package:intl/intl.dart'; // Import the intl library
 
 class ViewFlightLogsPage extends StatefulWidget {
@@ -44,28 +45,35 @@ class _ViewFlightLogsPageState extends State<ViewFlightLogsPage> {
     return DateFormat('d MMMM yyyy - HH:mm').format(dateTime);
   }
 
-  Future<void> _deleteFlightLog(int id) async {
-    await _databaseHelper.deleteFlightLog(id);
-    _fetchFlightLogs();
+  Future<void> _deleteFlightLog(int id, String documentId) async {
+    await _databaseHelper.deleteFlightLog(id); // Local database deletion
+    await FirebaseService().deleteFlightLog(documentId); // Firebase deletion
+    _fetchFlightLogs(); // Refresh the local list
   }
 
   void _showDeleteConfirmationDialog(int id) {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: Text(AppLocalizations.of(context)?.translate('delete_flight_log') ?? 'Delete Flight Log'),
-        content: Text(AppLocalizations.of(context)?.translate('delete_flight_log_confirmation') ?? 'Are you sure you want to delete this flight log?'),
+        title: Text(
+            AppLocalizations.of(context)?.translate('delete_flight_log') ??
+                'Delete Flight Log'),
+        content: Text(AppLocalizations.of(context)
+                ?.translate('delete_flight_log_confirmation') ??
+            'Are you sure you want to delete this flight log?'),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(context).pop(),
-            child: Text(AppLocalizations.of(context)?.translate('cancel') ?? 'Cancel'),
+            child: Text(
+                AppLocalizations.of(context)?.translate('cancel') ?? 'Cancel'),
           ),
           ElevatedButton(
             onPressed: () {
-              _deleteFlightLog(id);
+              _deleteFlightLog(id, id.toString());
               Navigator.of(context).pop(true);
             },
-            child: Text(AppLocalizations.of(context)?.translate('delete') ?? 'Delete'),
+            child: Text(
+                AppLocalizations.of(context)?.translate('delete') ?? 'Delete'),
           ),
         ],
       ),
@@ -76,7 +84,9 @@ class _ViewFlightLogsPageState extends State<ViewFlightLogsPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text(AppLocalizations.of(context)?.translate('view_flight_logs') ?? 'View Flight Logs'),
+        title: Text(
+            AppLocalizations.of(context)?.translate('view_flight_logs') ??
+                'View Flight Logs'),
         backgroundColor: Colors.deepPurple[400],
         elevation: 0,
       ),
@@ -96,14 +106,40 @@ class _ViewFlightLogsPageState extends State<ViewFlightLogsPage> {
                 final flightLog = _flightLogs[index];
                 return Card(
                   elevation: 4,
-                  margin: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                  margin:
+                      const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(10), // Rounded corners
+                    side: const BorderSide(
+                        color: Colors.blueAccent, width: 1), // Blue border
+                  ),
                   child: ListTile(
-                    leading: Icon(Icons.flight_takeoff, color: Theme.of(context).primaryColor),
-                    title: Text('${_formatDateTime(flightLog.date)} - ${flightLog.departureAirport} to ${flightLog.arrivalAirport}'),
-                    subtitle: Text('${AppLocalizations.of(context)?.translate('duration') ?? 'Duration'}: ${flightLog.duration} ${AppLocalizations.of(context)?.translate('minutes') ?? 'minutes'}'),
+                    leading: const Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(Icons.flight_takeoff,
+                            color: Colors.blue), // Departure icon
+                        SizedBox(width: 4), // Space between icons
+                        Icon(Icons.flight_land,
+                            color: Colors.green), // Arrival icon
+                      ],
+                    ),
+                    title: Text(
+                      '${_formatDateTime(flightLog.date)} - ${flightLog.departureAirport} to ${flightLog.arrivalAirport}',
+                      style: const TextStyle(
+                        fontWeight: FontWeight.bold, // Emphasizes title
+                      ),
+                    ),
+                    subtitle: Text(
+                      '${AppLocalizations.of(context)?.translate('duration') ?? 'Duration'}: ${flightLog.duration} ${AppLocalizations.of(context)?.translate('minutes') ?? 'minutes'}',
+                      style: TextStyle(
+                          fontSize: 14,
+                          color: Colors.grey[600]), // Subdued subtitle text
+                    ),
                     trailing: IconButton(
                       icon: const Icon(Icons.delete, color: Colors.red),
-                      onPressed: () => _showDeleteConfirmationDialog(flightLog.id!),
+                      onPressed: () =>
+                          _showDeleteConfirmationDialog(flightLog.id!),
                     ),
                   ),
                 );

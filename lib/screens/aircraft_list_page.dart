@@ -31,7 +31,8 @@ class _AircraftListPageState extends State<AircraftListPage> {
   void _navigateToAddEditAircraftPage({Aircraft? aircraft}) async {
     await Navigator.push(
       context,
-      MaterialPageRoute(builder: (context) => AddAircraftPage(aircraft: aircraft)),
+      MaterialPageRoute(
+          builder: (context) => AddAircraftPage(aircraft: aircraft)),
     );
     _fetchAircraftList();
   }
@@ -46,12 +47,16 @@ class _AircraftListPageState extends State<AircraftListPage> {
       context: context,
       builder: (BuildContext context) {
         return AlertDialog(
-          title: Text(AppLocalizations.of(context)?.translate('confirm_delete') ?? 'Confirm Delete'),
-          content: Text('${AppLocalizations.of(context)?.translate('are_you_sure_delete') ?? 'Are you sure you want to delete'} ${aircraft.type}?'),
+          title: Text(
+              AppLocalizations.of(context)?.translate('confirm_delete') ??
+                  'Confirm Delete'),
+          content: Text(
+              '${AppLocalizations.of(context)?.translate('are_you_sure_delete') ?? 'Are you sure you want to delete'} ${aircraft.type}?'),
           actions: <Widget>[
             TextButton(
               onPressed: () => Navigator.of(context).pop(),
-              child: Text(AppLocalizations.of(context)?.translate('cancel') ?? 'Cancel'),
+              child: Text(AppLocalizations.of(context)?.translate('cancel') ??
+                  'Cancel'),
             ),
             ElevatedButton(
               onPressed: () {
@@ -59,7 +64,8 @@ class _AircraftListPageState extends State<AircraftListPage> {
                 Navigator.of(context).pop();
               },
               style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
-              child: Text(AppLocalizations.of(context)?.translate('delete') ?? 'Delete'),
+              child: Text(AppLocalizations.of(context)?.translate('delete') ??
+                  'Delete'),
             ),
           ],
         );
@@ -73,11 +79,14 @@ class _AircraftListPageState extends State<AircraftListPage> {
 
     return Scaffold(
       appBar: AppBar(
-        title: Text(localizations?.translate('aircraft_list') ?? 'Aircraft List'),
+        title:
+            Text(localizations?.translate('aircraft_list') ?? 'Aircraft List'),
         backgroundColor: Colors.indigo[400], // Stylish color for the app bar
       ),
       body: _aircraftList.isEmpty
-          ? Center(child: Text(localizations?.translate('no_aircraft_found') ?? 'No aircraft found. Please add an aircraft.'))
+          ? Center(
+              child: Text(localizations?.translate('no_aircraft_found') ??
+                  'No aircraft found. Please add an aircraft.'))
           : ListView.separated(
               itemCount: _aircraftList.length,
               itemBuilder: (context, index) {
@@ -88,32 +97,42 @@ class _AircraftListPageState extends State<AircraftListPage> {
                   child: ListTile(
                     leading: CircleAvatar(
                       backgroundColor: Colors.indigo[200],
-                      child: Text(aircraft.type[0], style: TextStyle(color: Colors.white)),
+                      child: Text(aircraft.type[0],
+                          style: const TextStyle(color: Colors.white)),
                     ),
                     title: Text(aircraft.type),
-                    subtitle: Text('${localizations?.translate('max_speed') ?? "Max Speed"}: ${aircraft.maxSpeed} knots'),
+                    subtitle: Column(
+                      children: [
+                        Text(
+                            '${localizations?.translate('total_flight_hours') ?? "Total Flight Hours"}: ${aircraft.hoursFlown} hours'),
+                        Text(
+                            '${localizations?.translate('current_parking') ?? "Current Parking"}: ${aircraft.parkingAirport}')
+                      ],
+                    ),
                     trailing: Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
                         IconButton(
-                          icon: Icon(Icons.edit, color: Colors.blue),
-                          onPressed: () => _navigateToAddEditAircraftPage(aircraft: aircraft),
+                          icon: const Icon(Icons.edit, color: Colors.blue),
+                          onPressed: () => _navigateToAddEditAircraftPage(
+                              aircraft: aircraft),
                         ),
                         IconButton(
-                          icon: Icon(Icons.delete, color: Colors.red),
-                          onPressed: () => _showDeleteConfirmationDialog(aircraft),
+                          icon: const Icon(Icons.delete, color: Colors.red),
+                          onPressed: () =>
+                              _showDeleteConfirmationDialog(aircraft),
                         ),
                       ],
                     ),
                   ),
                 );
               },
-              separatorBuilder: (context, index) => Divider(),
+              separatorBuilder: (context, index) => const Divider(),
             ),
       floatingActionButton: FloatingActionButton(
         backgroundColor: Colors.indigo,
         onPressed: () => _navigateToAddEditAircraftPage(),
-        child: Icon(Icons.add, color: Colors.white),
+        child: const Icon(Icons.add, color: Colors.white),
       ),
     );
   }

@@ -116,6 +116,8 @@
     "view_logs": "View Logs",
     "aircraft": "Aircraft",
     "closed_pattern": "Closed Pattern Flight",
-    "toggle_closed_pattern": "Toggle if this is a closed pattern flight."
+    "toggle_closed_pattern": "Toggle if this is a closed pattern flight.",
+    "is_military": "Is this aircraft military?",
+    "current_parking": "Current Parking"
   }
   
