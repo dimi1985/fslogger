@@ -23,7 +23,6 @@
     "date": "Date: ",
     "current_time": "Current Time: ",
     "elapsed_time": "Elapsed Time:",
-    "minutes": "minutes",
     "departure_airport": "Departure Airport",
     "arrival_airport": "Arrival Airport",
     "route": "Route",
@@ -115,6 +114,8 @@
     "signed_in_as": "Signed in as ",
     "add": "Add",
     "view_logs": "View Logs",
-    "aircraft": "Aircraft"
+    "aircraft": "Aircraft",
+    "closed_pattern": "Closed Pattern Flight",
+    "toggle_closed_pattern": "Toggle if this is a closed pattern flight."
   }
   

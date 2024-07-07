@@ -1,8 +1,10 @@
 // ignore_for_file: library_private_types_in_public_api
 
 import 'package:flutter/material.dart';
+import 'package:flutter/widgets.dart';
 import 'package:fslogger/screens/add_aircraft_page.dart';
 import 'package:fslogger/utils/applocalizations.dart';
+import 'package:fslogger/utils/metar_service.dart';
 import 'package:fslogger/utils/settings_model.dart';
 import 'package:intl/intl.dart';
 import 'dart:async';
@@ -39,6 +41,7 @@ class _AddFlightLogPageState extends State<AddFlightLogPage> {
   bool _isDynamic = false;
   bool _isFlightStarted = false;
   bool _showTimeInfo = true;
+  bool isClosedPattern = false;
   Timer? _flightTimer;
   DateTime? _flightStartTime;
   DateTime _currentTime = DateTime.now();
@@ -46,18 +49,57 @@ class _AddFlightLogPageState extends State<AddFlightLogPage> {
   Aircraft? _aircraft;
   double _estimatedFlightTime = 0.0;
   List<String> checklistItems = [
+    // Pre-flight Inspection
     'Preflight Inspection Completed',
     'Fuel Check',
     'Weight and Balance Checked',
     'Flight Plan Filed',
     'Weather Briefing Completed',
+
+    // Before Takeoff
+    'Before Takeoff - Flaps Set to Takeoff Position',
+    'Before Takeoff - Landing Light On',
+    'Before Takeoff - Line Up and Wait',
+
+    // After Takeoff
+    'After Takeoff - Gear Up (if retractable)',
+    'After Takeoff - Climb Power Set',
+    'Top of Climb (TOC) Reached',
+
+    // Cruising
+    'Cruising Altitude Reached',
+    'Fuel Checks at Intervals',
+
+    // Top of Descent (TOD)
+    'Top of Descent (TOD) Initiated',
+
+    // Descent
+    'Descent Checks Completed',
+
+    // Before Landing
+    'Before Landing - Flaps Set for Landing',
+    'Before Landing - Landing Gear Down (if retractable)',
+    'Before Landing - Landing Light On',
+
+    // After Landing
+    'After Landing - Flaps Retracted',
+    'After Landing - Landing Light Off',
+    'After Landing - Transponder Standby',
+
+    // Securing Aircraft
+    'Aircraft Secured and Logs Completed'
   ];
 
   List<bool> checklistStatus = [];
 
+  Map<String, dynamic>? departureMetar;
+  Map<String, dynamic>? destinationMetar;
+  bool keyboardIsOpen = false;
+
   @override
   void initState() {
     super.initState();
+
     checklistStatus = List<bool>.filled(checklistItems.length, false);
     _isDynamic =
         Provider.of<SettingsModel>(context, listen: false).defaultDynamicMode;
@@ -66,6 +108,20 @@ class _AddFlightLogPageState extends State<AddFlightLogPage> {
       _departureAirportController.text =
           widget.lastFlightLog?.arrivalAirport ?? 'Last Destination';
     }
+  }
+
+  void fetchMetarDataDep(String airportCode) async {
+    var metarData = await MetarService().fetchWeather(airportCode);
+    setState(() {
+      departureMetar = metarData;
+    });
+  }
+
+  void fetchMetarDataDes(String airportCode) async {
+    var metarData = await MetarService().fetchWeather(airportCode);
+    setState(() {
+      destinationMetar = metarData;
+    });
   }
 
   void _loadAircraftDetails() async {
@@ -145,188 +201,400 @@ class _AddFlightLogPageState extends State<AddFlightLogPage> {
     });
   }
 
+  bool isKeyboardOpen(BuildContext context) {
+    return MediaQuery.of(context).viewInsets.bottom != 0;
+  }
+
   @override
   Widget build(BuildContext context) {
     var localizations = AppLocalizations.of(context);
+    keyboardIsOpen = isKeyboardOpen(context);
     return Scaffold(
       appBar: _isFlightStarted
           ? null
           : AppBar(
-              title: Text(_isDynamic
-                  ? localizations?.translate('dynamic_flight_log') ??
-                      'Dynamic Flight Log'
-                  : localizations?.translate('static_flight_log') ??
-                      'Static Flight Log'),
+              title: Text(
+                _isDynamic
+                    ? localizations?.translate('dynamic_flight_log') ??
+                        'Dynamic Flight Log'
+                    : localizations?.translate('static_flight_log') ??
+                        'Static Flight Log',
+                style: const TextStyle(
+                    color: Colors
+                        .white), // Optional: Adjust text color for better contrast
+              ),
+              flexibleSpace: Container(
+                decoration: const BoxDecoration(
+                  gradient: LinearGradient(
+                    colors: [
+                      Colors.blue,
+                      Colors.blueGrey
+                    ], // Example colors, adjust as needed
+                    begin: Alignment.topRight,
+                    end: Alignment.bottomLeft,
+                  ),
+                ),
+              ),
               actions: [
-                Switch(
-                  value: _isDynamic,
-                  onChanged: (bool value) {
-                    setState(() {
-                      _isDynamic = value;
-                    });
-                  },
-                  activeColor: Colors.blue,
+                Container(
+                  margin: const EdgeInsets.all(
+                      8), // Gives some padding around the switch
+                  decoration: BoxDecoration(
+                    color: Colors.white, // Background color of the container
+                    borderRadius: BorderRadius.circular(20), // Rounded corners
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withOpacity(0.1),
+                        spreadRadius: 1,
+                        blurRadius: 3,
+                        offset:
+                            const Offset(0, 1), // Changes position of shadow
+                      ),
+                    ],
+                  ),
+                  child: Switch(
+                    value: _isDynamic,
+                    onChanged: (bool value) {
+                      setState(() {
+                        _isDynamic = value;
+                      });
+                    },
+                    activeTrackColor: Colors.blue[300],
+                    activeColor: Colors.blue[800],
+                  ),
                 ),
               ],
+              elevation: 4, // Elevates AppBar, casting a small shadow
+              shape: const RoundedRectangleBorder(
+                borderRadius: BorderRadius.vertical(
+                  bottom: Radius.circular(16), // Rounded bottom corners
+                ),
+              ),
             ),
       body: Padding(
         padding: const EdgeInsets.all(16.0),
         child: Column(
           children: [
             if (!_isFlightStarted)
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    '${localizations?.translate('aircraft_type') ?? 'Aircraft'}: ${_aircraft?.type ?? 'Loading...'}',
-                    style: const TextStyle(
-                        fontSize: 16, fontWeight: FontWeight.bold),
+              Visibility(
+                  visible: !keyboardIsOpen,
+                child: Card(
+                  elevation: 2, // Adds a subtle shadow
+                  margin: const EdgeInsets.all(8), // Gives space around the card
+                  child: Column(
+                    children: [
+                      ListTile(
+                        leading: Icon(Icons.airplanemode_active,
+                            color: Theme.of(context).primaryColor),
+                        title: Text(
+                          '${localizations?.translate('aircraft_type') ?? 'Aircraft'}: ${_aircraft?.type ?? 'Loading...'}',
+                          style: const TextStyle(fontWeight: FontWeight.bold),
+                        ),
+                        tileColor: Colors.white,
+                      ),
+                      const Divider(), // Adds a subtle line between items
+                      ListTile(
+                        leading: Icon(Icons.location_on,
+                            color: Theme.of(context).primaryColor),
+                        title: Text(
+                          '${localizations?.translate('last_destination') ?? 'Last Destination'}: ${widget.lastFlightLog?.arrivalAirport ?? 'Loading...'}',
+                          style: const TextStyle(fontWeight: FontWeight.bold),
+                        ),
+                        tileColor: Colors.white,
+                      ),
+                      const Divider(), // Continues to separate each section
+                      ListTile(
+                        leading: Icon(Icons.calendar_today,
+                            color: Theme.of(context).primaryColor),
+                        title: Text(
+                          '${Localizations.of(context, AppLocalizations)?.translate('date') ?? 'Date'}: '
+                          '${DateFormat('d MMMM yyyy - HH:mm', 'el').format(DateTime.now())}',
+                          style: const TextStyle(fontWeight: FontWeight.bold),
+                        ),
+                        tileColor: Colors.white,
+                      ),
+                    ],
                   ),
-                  const SizedBox(
-                      height: 8), // Provides some spacing between the texts
-                  Text(
-                    '${localizations?.translate('last_destination') ?? 'Last Destination'}: ${widget.lastFlightLog?.arrivalAirport ?? 'Loading...'}',
-                    style: const TextStyle(
-                        fontSize: 16, fontWeight: FontWeight.bold),
-                  ),
-                  const SizedBox(
-                      height: 8), // Provides some spacing between the texts
-                  Text(
-                    '${Localizations.of(context, AppLocalizations)?.translate('date') ?? 'Date'}: '
-                    '${DateFormat('d MMMM yyyy - HH:mm', 'el').format(DateTime.now())}',
-                    style: const TextStyle(
-                        fontSize: 16, fontWeight: FontWeight.bold),
-                  )
-                ],
+                ),
               ),
+            const SizedBox(
+              height: 20,
+            ),
+            if (!_isFlightStarted)
+              Visibility(
+                visible: !keyboardIsOpen,
+                child: Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: Colors
+                        .grey.shade200, // Light background color for the tile
+                    borderRadius: BorderRadius.circular(
+                        10), // Rounded corners for a softer look
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.grey.shade300,
+                        blurRadius: 5,
+                        offset: const Offset(0, 2), // Shadow for some depth
+                      ),
+                    ],
+                  ),
+                  child: SwitchListTile(
+                    title: Text(
+                      localizations?.translate('closed_pattern') ??
+                          'Closed Pattern Flight',
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                        color: Theme.of(context)
+                            .primaryColorDark, // Darker text for contrast
+                      ),
+                    ),
+                    value: isClosedPattern,
+                    onChanged: (bool value) {
+                      setState(() {
+                        isClosedPattern = value;
+                      });
+                    },
+                    subtitle: Text(
+                      localizations?.translate('toggle_closed_pattern') ??
+                          'Toggle if this is a closed pattern flight.',
+                      style: TextStyle(
+                        fontSize: 14,
+                        color: Theme.of(context)
+                            .hintColor, // Subtle hint color for subtitles
+                      ),
+                    ),
+                    activeColor: Theme.of(context)
+                        .primaryColor, // Use the accent color for active state
+                    activeTrackColor:
+                        Theme.of(context).primaryColor.withOpacity(0.5),
+                    inactiveThumbColor: Colors.grey,
+                    inactiveTrackColor: Colors.grey.shade400,
+                    controlAffinity: ListTileControlAffinity
+                        .leading, // Switch on the left side
+                  ),
+                ),
+              ),
+            const SizedBox(
+              height: 20,
+            ),
             if (_isDynamic && _isFlightStarted)
               SizedBox(
                 height: _isFlightStarted ? 100 : 0,
               ),
-            Column(
-              mainAxisAlignment: MainAxisAlignment.start,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  children: [
-                    if (_showTimeInfo)
-                      Column(
-                        children: [
-                          Text(
-                            '${AppLocalizations.of(context)?.translate('current_time') ?? 'Current Time:'} ${DateFormat('HH:mm').format(_currentTime)}',
-                            style: const TextStyle(
-                                fontSize: 18, fontWeight: FontWeight.bold),
+            if (_isFlightStarted)
+            
+              Column(
+                mainAxisAlignment: MainAxisAlignment.start,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                 
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      if (_showTimeInfo)
+                        Expanded(
+                          child: Container(
+                            padding: const EdgeInsets.all(10),
+                            margin: const EdgeInsets.only(
+                                right:
+                                    10), // Adds space between the two columns
+                            decoration: BoxDecoration(
+                              color: Colors.white,
+                              borderRadius: BorderRadius.circular(10),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: Colors.black.withOpacity(0.1),
+                                  spreadRadius: 0,
+                                  blurRadius: 10,
+                                  offset: const Offset(
+                                      0, 4), // changes position of shadow
+                                ),
+                              ],
+                            ),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  '${AppLocalizations.of(context)?.translate('current_time') ?? 'Current Time:'} ${DateFormat('HH:mm').format(_currentTime)}',
+                                  style: const TextStyle(
+                                      fontSize: 18,
+                                      fontWeight: FontWeight.bold),
+                                ),
+                                Text(
+                                  '${AppLocalizations.of(context)?.translate('elapsed_time') ?? 'Elapsed Time:'} ${_flightDuration ~/ 60} ${AppLocalizations.of(context)?.translate('minutes') ?? 'minutes'}',
+                                  style: const TextStyle(
+                                      fontSize: 18,
+                                      fontWeight: FontWeight.bold),
+                                ),
+                                Text(
+                                  'Estimated Time: ${_estimatedFlightTime.toStringAsFixed(2)} hours',
+                                  style: const TextStyle(
+                                      fontSize: 16, color: Colors.deepPurple),
+                                ),
+                              ],
+                            ),
                           ),
-                          Text(
-                            '${AppLocalizations.of(context)?.translate('elapsed_time') ?? 'Elapsed Time:'} ${_flightDuration ~/ 60} ${AppLocalizations.of(context)?.translate('minutes') ?? 'minutes'}',
-                            style: const TextStyle(
-                                fontSize: 18, fontWeight: FontWeight.bold),
-                          ),
-                          Text(
-                              'Estimated Time: ${_estimatedFlightTime.toStringAsFixed(2)} hours'),
-                        ],
-                      ),
-                    const Spacer(),
-                    IconButton(
+                        ),
+                      IconButton(
                         onPressed: _toggleTimeInfo,
                         icon: Icon(_showTimeInfo
-                            ? Icons.remove_red_eye_outlined
-                            : Icons.remove_red_eye_rounded))
-                  ],
-                ),
-                const SizedBox(
-                  height: 50,
-                ),
-                SizedBox(
-                  height: 400,
-                  width: 300,
-                  child: ListView.builder(
-                    shrinkWrap: true,
-                    itemCount: checklistItems.length,
-                    itemBuilder: (BuildContext context, int index) {
-                      return CheckboxListTile(
-                        title: Text(checklistItems[index]),
-                        value: checklistStatus[index],
-                        onChanged: (bool? value) {
-                          setState(() {
-                            checklistStatus[index] = value!;
-                          });
-                        },
-                      );
-                    },
+                            ? Icons.visibility_off
+                            : Icons.visibility),
+                        color: Theme.of(context).primaryColor,
+                      ),
+                    ],
                   ),
-                ),
-              ],
-            ),
+                  const SizedBox(height: 20),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: MetarCard(
+                            metarData: departureMetar,
+                            title: 'Departure METAR'),
+                      ),
+                      Expanded(
+                        child: MetarCard(
+                            metarData: destinationMetar,
+                            title: 'Destination METAR'),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 20),
+                  SizedBox(
+                    height: 300,
+                    width: 300,
+                    child: ListView.builder(
+                      shrinkWrap: true,
+                      itemCount: checklistItems.length,
+                      itemBuilder: (BuildContext context, int index) {
+                        return CheckboxListTile(
+                          title: Text(checklistItems[index]),
+                          value: checklistStatus[index],
+                          onChanged: (bool? value) {
+                            setState(() {
+                              checklistStatus[index] = value!;
+                            });
+                          },
+                        );
+                      },
+                    ),
+                  ),
+                ],
+              ),
             Expanded(
               child: Form(
                 key: _formKey,
                 child: ListView(
+                  padding: const EdgeInsets.symmetric(vertical: 10),
                   children: [
-                    if (!_isDynamic || !_isFlightStarted)
-                      TextFormField(
-                        controller: _departureAirportController,
-                        decoration: InputDecoration(
+                    if (!isClosedPattern)
+                      if (!_isDynamic || !_isFlightStarted)
+                        TextFormField(
+                          controller: _departureAirportController,
+                          decoration: InputDecoration(
                             labelText:
                                 localizations?.translate('departure_airport') ??
-                                    'Departure Airport'),
-                        onChanged: (value) {
-                          _departureAirportController.value = TextEditingValue(
-                            text: value.toUpperCase(),
-                            selection: _departureAirportController.selection,
-                          );
-                        },
-                      ),
-                    if (!_isDynamic || !_isFlightStarted)
-                      TextFormField(
-                        controller: _arrivalAirportController,
-                        decoration: InputDecoration(
+                                    'Departure Airport',
+                            border: const OutlineInputBorder(),
+                            prefixIcon: const Icon(Icons.flight_takeoff),
+                          ),
+                          onChanged: (value) {
+                            _departureAirportController.value =
+                                TextEditingValue(
+                              text: value.toUpperCase(),
+                              selection: _departureAirportController.selection,
+                            );
+                          },
+                        ),
+                    const SizedBox(height: 10), // Adds space between fields
+                    if (!isClosedPattern)
+                      if (!_isDynamic || !_isFlightStarted)
+                        TextFormField(
+                          controller: _arrivalAirportController,
+                          decoration: InputDecoration(
                             labelText:
                                 localizations?.translate('arrival_airport') ??
-                                    'Arrival Airport'),
-                        onChanged: (value) {
-                          _arrivalAirportController.value = TextEditingValue(
-                            text: value.toUpperCase(),
-                            selection: _arrivalAirportController.selection,
-                          );
-                        },
-                      ),
-                    if (!_isDynamic || !_isFlightStarted)
-                      TextFormField(
-                        controller: _routeController,
-                        decoration: InputDecoration(
+                                    'Arrival Airport',
+                            border: const OutlineInputBorder(),
+                            prefixIcon: const Icon(Icons.flight_land),
+                          ),
+                          onChanged: (value) {
+                            _arrivalAirportController.value = TextEditingValue(
+                              text: value.toUpperCase(),
+                              selection: _arrivalAirportController.selection,
+                            );
+                          },
+                        ),
+                    const SizedBox(height: 10),
+                    if (!isClosedPattern)
+                      if (!_isDynamic || !_isFlightStarted)
+                        TextFormField(
+                          controller: _routeController,
+                          decoration: InputDecoration(
                             labelText:
-                                localizations?.translate('route') ?? 'Route'),
-                        onChanged: (value) {
-                          _routeController.value = TextEditingValue(
-                            text: value.toUpperCase(),
-                            selection: _routeController.selection,
-                          );
-                        },
-                      ),
-                    if (!_isDynamic || !_isFlightStarted)
-                      TextFormField(
-                        controller: _routeDistanceController,
-                        decoration: InputDecoration(
+                                localizations?.translate('route') ?? 'Route',
+                            border: const OutlineInputBorder(),
+                            prefixIcon: const Icon(Icons.map),
+                          ),
+                          onChanged: (value) {
+                            _routeController.value = TextEditingValue(
+                              text: value.toUpperCase(),
+                              selection: _routeController.selection,
+                            );
+                          },
+                        ),
+                    const SizedBox(height: 10),
+                    if (!isClosedPattern)
+                      if (!_isDynamic || !_isFlightStarted)
+                        TextFormField(
+                          controller: _routeDistanceController,
+                          decoration: InputDecoration(
                             labelText:
                                 localizations?.translate('route_distance') ??
-                                    'Route Distance (nm)'),
-                        keyboardType: TextInputType.number,
-                        onChanged: (value) {
-                          _calculateEstimatedTime();
-                        },
-                      ),
-                    if (!_isDynamic) // Only show duration field when not in dynamic mode
-                      TextFormField(
-                        controller: _durationController,
-                        decoration: InputDecoration(
+                                    'Route Distance (nm)',
+                            border: const OutlineInputBorder(),
+                            prefixIcon: const Icon(Icons.linear_scale),
+                            suffixText: 'nm',
+                          ),
+                          keyboardType: TextInputType.number,
+                          onChanged: (value) {
+                            _calculateEstimatedTime();
+                          },
+                        ),
+                    const SizedBox(height: 10),
+                    if (!isClosedPattern)
+                      if (!_isDynamic) // Only show duration field when not in dynamic mode
+                        TextFormField(
+                          controller: _durationController,
+                          decoration: InputDecoration(
                             labelText: localizations?.translate('duration') ??
-                                'Duration (minutes)'),
-                        keyboardType: TextInputType.number,
+                                'Duration (minutes)',
+                            border: const OutlineInputBorder(),
+                            prefixIcon: const Icon(Icons.timer),
+                            suffixText: 'minutes',
+                          ),
+                          keyboardType: TextInputType.number,
+                        ),
+                    if (isClosedPattern)
+                      Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const SizedBox(height: 20),
+                          Text(
+                            localizations?.translate('closed_pattern_info') ??
+                                'Closed Traffic Pattern Area',
+                            style: const TextStyle(
+                                fontWeight: FontWeight.bold,
+                                color: Colors.deepPurple),
+                          ),
+                          Text(
+                            "${_departureAirportController.text} - ${localizations?.translate('same_as_departure') ?? 'Same as Departure'}",
+                            style: const TextStyle(
+                                fontSize: 16, fontWeight: FontWeight.bold),
+                          )
+                        ],
                       ),
-                    const SizedBox(
-                      height: 50,
-                    ),
                     ElevatedButton(
                       onPressed: () {
                         if (_isDynamic) {
@@ -334,22 +602,28 @@ class _AddFlightLogPageState extends State<AddFlightLogPage> {
                             _endFlight();
                           } else {
                             _startFlight();
+                            fetchMetarDataDep(
+                              widget.lastFlightLog?.arrivalAirport ?? '',
+                            );
+                            fetchMetarDataDes(
+                              _arrivalAirportController.text,
+                            );
                           }
                         } else {
                           _saveStaticFlightLog();
                         }
                       },
+                      style: ElevatedButton.styleFrom(
+                        padding: const EdgeInsets.symmetric(vertical: 12),
+                        textStyle: const TextStyle(fontSize: 16),
+                      ),
                       child: Text(_isDynamic
                           ? (_isFlightStarted
-                              ? AppLocalizations.of(context)
-                                      ?.translate('end_flight') ??
+                              ? localizations?.translate('end_flight') ??
                                   'End Flight'
-                              : AppLocalizations.of(context)
-                                      ?.translate('start_flight') ??
+                              : localizations?.translate('start_flight') ??
                                   'Start Flight')
-                          : AppLocalizations.of(context)
-                                  ?.translate('save_log') ??
-                              'Save Log'),
+                          : localizations?.translate('save_log') ?? 'Save Log'),
                     ),
                   ],
                 ),
@@ -376,5 +650,33 @@ class _AddFlightLogPageState extends State<AddFlightLogPage> {
 
       await _databaseHelper.insertFlightLog(flightLog);
     }
+  }
+}
+
+class MetarCard extends StatelessWidget {
+  final Map<String, dynamic>? metarData;
+  final String title;
+
+  const MetarCard({super.key, this.metarData, required this.title});
+
+  @override
+  Widget build(BuildContext context) {
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(8.0),
+        child: Column(
+          children: [
+            Text(title, style: const TextStyle(fontWeight: FontWeight.bold)),
+            Text(metarData != null
+                ? 'Temperature: ${metarData?['temperature']['value']}'
+                : 'Loading...'),
+            Text(metarData != null
+                ? 'Wind: ${metarData?['wind_speed']['value']} knots'
+                : 'Loading...'),
+            // Add more METAR details as needed
+          ],
+        ),
+      ),
+    );
   }
 }
