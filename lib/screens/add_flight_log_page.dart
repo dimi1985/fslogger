@@ -13,7 +13,7 @@ import 'package:provider/provider.dart';
 class AddFlightLogPage extends StatefulWidget {
   final FlightLog? lastFlightLog;
 
-  const AddFlightLogPage({super.key, this.lastFlightLog});
+  const AddFlightLogPage({super.key, required this.lastFlightLog});
 
   @override
   _AddFlightLogPageState createState() => _AddFlightLogPageState();
@@ -33,7 +33,6 @@ class _AddFlightLogPageState extends State<AddFlightLogPage> {
   final DatabaseHelper _databaseHelper = DatabaseHelper();
   final AircraftDatabaseHelper _aircraftDatabaseHelper =
       AircraftDatabaseHelper();
-      
 
   bool _isDynamic = false;
   bool _isFlightStarted = false;
@@ -44,10 +43,20 @@ class _AddFlightLogPageState extends State<AddFlightLogPage> {
   int _flightDuration = 0;
   Aircraft? _aircraft;
   double _estimatedFlightTime = 0.0;
+  List<String> checklistItems = [
+    'Preflight Inspection Completed',
+    'Fuel Check',
+    'Weight and Balance Checked',
+    'Flight Plan Filed',
+    'Weather Briefing Completed',
+  ];
+
+  List<bool> checklistStatus = [];
 
   @override
   void initState() {
     super.initState();
+    checklistStatus = List<bool>.filled(checklistItems.length, false);
     _isDynamic =
         Provider.of<SettingsModel>(context, listen: false).defaultDynamicMode;
     _loadAircraftDetails();
@@ -58,7 +67,7 @@ class _AddFlightLogPageState extends State<AddFlightLogPage> {
   }
 
   void _loadAircraftDetails() async {
-     final aircraftList = await _aircraftDatabaseHelper.getAllAircraft();
+    final aircraftList = await _aircraftDatabaseHelper.getAllAircraft();
     if (aircraftList.isEmpty) {
       // Redirect user to add aircraft if none exist
       WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -70,7 +79,8 @@ class _AddFlightLogPageState extends State<AddFlightLogPage> {
       setState(() {
         _aircraft = aircraftList.first;
         if (widget.lastFlightLog != null) {
-          _departureAirportController.text = widget.lastFlightLog?.arrivalAirport ?? 'Last Destination';
+          _departureAirportController.text =
+              widget.lastFlightLog?.arrivalAirport ?? 'Last Destination';
         }
       });
     }
@@ -81,7 +91,6 @@ class _AddFlightLogPageState extends State<AddFlightLogPage> {
       double routeDistance =
           double.tryParse(_routeDistanceController.text) ?? 0.0;
       _estimatedFlightTime = routeDistance / _aircraft!.normalCruiseSpeed;
-      print('Estimated Flight Time: $_estimatedFlightTime hours');
     }
   }
 
@@ -124,9 +133,8 @@ class _AddFlightLogPageState extends State<AddFlightLogPage> {
       route: _routeController.text,
       routeDistance: double.tryParse(_routeDistanceController.text) ?? 0.0,
     );
-
+    print('Save flight log: $flightLog');
     _databaseHelper.insertFlightLog(flightLog);
-    print('Flight Log Saved: Duration $durationInMinutes minutes');
   }
 
   void _toggleTimeInfo() {
@@ -143,7 +151,6 @@ class _AddFlightLogPageState extends State<AddFlightLogPage> {
         title: Text(_isDynamic
             ? localizations?.translate('dynamic_flight_log') ??
                 'Dynamic Flight Log'
-                
             : localizations?.translate('static_flight_log') ??
                 'Static Flight Log'),
         actions: [
@@ -166,12 +173,26 @@ class _AddFlightLogPageState extends State<AddFlightLogPage> {
               Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(localizations?.translate('aircraft_type') ??
-                      'Aircraft: ${_aircraft?.type ?? 'Loading...'}'),
-                  Text(localizations?.translate('last_destination') ??
-                      'Last Destination: ${widget.lastFlightLog?.arrivalAirport ?? 'Loading...'}'),
-                  Text(localizations?.translate('date') ??
-                      'Date: ${DateFormat('yyyy-MM-dd – kk:mm').format(DateTime.now())}'),
+                  Text(
+                    '${localizations?.translate('aircraft_type') ?? 'Aircraft'}: ${_aircraft?.type ?? 'Loading...'}',
+                    style: const TextStyle(
+                        fontSize: 16, fontWeight: FontWeight.bold),
+                  ),
+                  const SizedBox(
+                      height: 8), // Provides some spacing between the texts
+                  Text(
+                    '${localizations?.translate('last_destination') ?? 'Last Destination'}: ${widget.lastFlightLog?.arrivalAirport ?? 'Loading...'}',
+                    style: const TextStyle(
+                        fontSize: 16, fontWeight: FontWeight.bold),
+                  ),
+                  const SizedBox(
+                      height: 8), // Provides some spacing between the texts
+                  Text(
+                    '${Localizations.of(context, AppLocalizations)?.translate('date') ?? 'Date'}: '
+                    '${DateFormat('d MMMM yyyy - HH:mm', 'el').format(DateTime.now())}',
+                    style: const TextStyle(
+                        fontSize: 16, fontWeight: FontWeight.bold),
+                  )
                 ],
               ),
             if (_isDynamic && _isFlightStarted)
@@ -185,25 +206,18 @@ class _AddFlightLogPageState extends State<AddFlightLogPage> {
                         Column(
                           children: [
                             Text(
-                              AppLocalizations.of(context)?.translate(
-                                      'current_time', {
-                                    'time':
-                                        DateFormat('HH:mm').format(_currentTime)
-                                  }) ??
-                                  'Current Time: ${DateFormat('HH:mm').format(_currentTime)}',
+                              '${AppLocalizations.of(context)?.translate('current_time') ?? 'Current Time:'} ${DateFormat('HH:mm').format(_currentTime)}',
                               style: const TextStyle(
                                   fontSize: 18, fontWeight: FontWeight.bold),
                             ),
                             Text(
-                              AppLocalizations.of(context)?.translate(
-                                      'elapsed_time', {
-                                    'duration':
-                                        (_flightDuration ~/ 60).toString()
-                                  }) ??
-                                  'Elapsed Time: ${_flightDuration ~/ 60} minutes',
+                              '${AppLocalizations.of(context)?.translate('elapsed_time') ?? 'Elapsed Time:'} ${_flightDuration ~/ 60} ${AppLocalizations.of(context)?.translate('minutes') ?? 'minutes'}',
                               style: const TextStyle(
                                   fontSize: 18, fontWeight: FontWeight.bold),
                             ),
+                            Text(
+                                'Estimated Time: ${_estimatedFlightTime.toStringAsFixed(2)} hours'),
+                           
                           ],
                         ),
                       const Spacer(),
@@ -214,6 +228,26 @@ class _AddFlightLogPageState extends State<AddFlightLogPage> {
                               : Icons.remove_red_eye_rounded))
                     ],
                   ),
+                  const SizedBox(height: 50,),
+                   SizedBox(
+                              height: 300,
+                              width: 300,
+                              child: ListView.builder(
+                                shrinkWrap: true,
+                                itemCount: checklistItems.length,
+                                itemBuilder: (BuildContext context, int index) {
+                                  return CheckboxListTile(
+                                    title: Text(checklistItems[index]),
+                                    value: checklistStatus[index],
+                                    onChanged: (bool? value) {
+                                      setState(() {
+                                        checklistStatus[index] = value!;
+                                      });
+                                    },
+                                  );
+                                },
+                              ),
+                            ),
                 ],
               ),
             Expanded(
@@ -221,7 +255,7 @@ class _AddFlightLogPageState extends State<AddFlightLogPage> {
                 key: _formKey,
                 child: ListView(
                   children: [
-                    if (!_isDynamic)
+                    if (!_isDynamic || !_isFlightStarted)
                       TextFormField(
                         controller: _departureAirportController,
                         decoration: InputDecoration(
@@ -235,6 +269,7 @@ class _AddFlightLogPageState extends State<AddFlightLogPage> {
                           );
                         },
                       ),
+                        if (!_isDynamic || !_isFlightStarted)
                     TextFormField(
                       controller: _arrivalAirportController,
                       decoration: InputDecoration(
@@ -248,6 +283,7 @@ class _AddFlightLogPageState extends State<AddFlightLogPage> {
                         );
                       },
                     ),
+                      if (!_isDynamic || !_isFlightStarted)
                     TextFormField(
                       controller: _routeController,
                       decoration: InputDecoration(
@@ -260,6 +296,7 @@ class _AddFlightLogPageState extends State<AddFlightLogPage> {
                         );
                       },
                     ),
+                      if (!_isDynamic || !_isFlightStarted)
                     TextFormField(
                       controller: _routeDistanceController,
                       decoration: InputDecoration(
@@ -279,6 +316,7 @@ class _AddFlightLogPageState extends State<AddFlightLogPage> {
                                 'Duration (minutes)'),
                         keyboardType: TextInputType.number,
                       ),
+                       const SizedBox(height: 50,),
                     ElevatedButton(
                       onPressed: () {
                         if (_isDynamic) {

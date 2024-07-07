@@ -52,7 +52,9 @@ class _HomePageState extends State<HomePage> {
       });
     } else {
       setState(() {
-        _takeoffStatus = AppLocalizations.of(context)?.translate('fetch_weather_failed') ?? 'Failed to fetch weather data.';
+        _takeoffStatus =
+            AppLocalizations.of(context)?.translate('fetch_weather_failed') ??
+                'Failed to fetch weather data.';
       });
     }
   }
@@ -63,17 +65,21 @@ class _HomePageState extends State<HomePage> {
     _windDifference = windSpeed - maxCrosswindComponent;
 
     if (windSpeed <= maxCrosswindComponent) {
-      return AppLocalizations.of(context)?.translate('weather_suitable') ?? 'Weather is suitable for takeoff.';
+      return AppLocalizations.of(context)?.translate('weather_suitable') ??
+          'Weather is suitable for takeoff.';
     } else {
       return '${AppLocalizations.of(context)?.translate('weather_not_suitable') ?? "Weather is not suitable for takeoff. Reason:"} Wind is $_windDifference knots above normal aircraft procedures.';
     }
   }
 
   String? _calculateEstimatedCalmTime(Map<String, dynamic> metarData) {
-    final DateTime? observationTime = DateTime.tryParse(metarData['time']['dt']);
+    final DateTime? observationTime =
+        DateTime.tryParse(metarData['time']['dt']);
     if (observationTime != null) {
-      final DateTime estimatedCalmTime = observationTime.add(const Duration(hours: 3)); // Assume calm within 3 hours
-      final String localTime = DateFormat('HH:mm').format(estimatedCalmTime.toLocal());
+      final DateTime estimatedCalmTime = observationTime
+          .add(const Duration(hours: 3)); // Assume calm within 3 hours
+      final String localTime =
+          DateFormat('HH:mm').format(estimatedCalmTime.toLocal());
       final String zuluTime = DateFormat('HH:mm').format(estimatedCalmTime);
       return '${AppLocalizations.of(context)?.translate('estimated_calm_time') ?? "Estimated calm time"}: $localTime local ($zuluTime Z)';
     }
@@ -84,36 +90,8 @@ class _HomePageState extends State<HomePage> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text(AppLocalizations.of(context)?.translate('flight_logs') ?? 'Flight Logs'),
         actions: [
-          IconButton(
-            icon: const Icon(Icons.add),
-            onPressed: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(builder: (context) => AddFlightLogPage(lastFlightLog: _latestFlightLog)),
-              ).then((_) => _fetchLatestFlightLog());
-            },
-          ),
-          IconButton(
-            icon: const Icon(Icons.view_list),
-            onPressed: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(builder: (context) => ViewFlightLogsPage()),
-              );
-            },
-          ),
-          IconButton(
-            icon: const Icon(Icons.airplanemode_active),
-            onPressed: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(builder: (context) => const AircraftListPage()),
-              );
-            },
-          ),
-          IconButton(
+             IconButton(
             icon: const Icon(Icons.settings),
             onPressed: () {
               Navigator.push(
@@ -123,82 +101,202 @@ class _HomePageState extends State<HomePage> {
             },
           ),
         ],
+        title: Text(AppLocalizations.of(context)?.translate('flight_logs') ??
+            'Flight Logs'),
+        backgroundColor: Colors.deepPurple[400],
+        elevation: 0,
       ),
       body: Center(
         child: _latestFlightLog != null
-            ? Padding(
-                padding: const EdgeInsets.all(16.0),
-                child: Padding(
-                  padding: const EdgeInsets.all(16.0),
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Text(
-                        AppLocalizations.of(context)?.translate('latest_destination') ?? 'Latest Destination',
-                        style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: Colors.blueAccent),
-                      ),
-                      const SizedBox(height: 8),
-                      Text(
-                        _latestFlightLog!.arrivalAirport.toUpperCase(),
-                        style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
-                      ),
-                      const SizedBox(height: 16),
-                      Row(
-                        children: [
-                          Expanded(
-                            child: Text(
-                              '${AppLocalizations.of(context)?.translate('wind_speed') ?? "Wind Speed"}: ${_metarData != null ? _metarData!['wind_speed']['value'] : 'Loading...'} knots',
-                              style: TextStyle(
-                                fontSize: 20,
-                                fontWeight: FontWeight.bold,
-                                color: _windDifference != null && _windDifference! > 0 ? Colors.red : Colors.black,
-                              ),
-                            ),
-                          ),
-                          TextButton(
-                            onPressed: _metarData != null
-                                ? () {
-                                    Navigator.push(
-                                      context,
-                                      MaterialPageRoute(
-                                        builder: (context) => DetailedMetarPage(
-                                          airportCode: _latestFlightLog!.arrivalAirport,
-                                          metarData: _metarData!,
-                                        ),
-                                      ),
-                                    );
-                                  }
-                                : null,
-                            child: Text(
-                              AppLocalizations.of(context)?.translate('view_detailed_metar') ?? 'View Detailed METAR',
-                              style: const TextStyle(fontSize: 16, color: Colors.blueAccent, decoration: TextDecoration.underline),
-                            ),
-                          ),
+            ? SingleChildScrollView(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Container(
+                      margin: const EdgeInsets.all(16),
+                      padding: const EdgeInsets.symmetric(
+                          vertical: 20, horizontal: 16),
+                      decoration: BoxDecoration(
+                        gradient: LinearGradient(
+                          colors: [
+                            Colors.deepPurple.shade300,
+                            Colors.deepPurple.shade500
+                          ],
+                          begin: Alignment.topLeft,
+                          end: Alignment.bottomRight,
+                        ),
+                        borderRadius: BorderRadius.circular(12),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withOpacity(0.15),
+                            offset: Offset(0, 4),
+                            blurRadius: 10,
+                          )
                         ],
                       ),
-                      if (_takeoffStatus != null)
-                        Padding(
-                          padding: const EdgeInsets.only(top: 16.0),
-                          child: Column(
-                            children: [
-                              Text(
-                                _takeoffStatus!,
-                                style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: _takeoffStatus == 'Weather is suitable for takeoff.' ? Colors.green : Colors.red),
-                              ),
-                              if (_estimatedCalmTime != null)
-                                Text(
-                                  _estimatedCalmTime!,
-                                  style: TextStyle(fontSize: 16, color: Colors.orange.withOpacity(0.7)),
-                                ),
-                            ],
+                      child: Column(
+                        children: [
+                          Text(
+                            AppLocalizations.of(context)
+                                    ?.translate('latest_destination') ??
+                                'Latest Destination',
+                            style: TextStyle(
+                                fontSize: 22,
+                                fontWeight: FontWeight.bold,
+                                color: Colors.white),
                           ),
-                        ),
-                    ],
-                  ),
+                          SizedBox(height: 10),
+                          Text(
+                            _latestFlightLog!.arrivalAirport.toUpperCase(),
+                            style: TextStyle(
+                                fontSize: 20,
+                                fontWeight: FontWeight.bold,
+                                color: Colors.white70),
+                          ),
+                          SizedBox(height: 20),
+                          if (_metarData != null)
+                            WeatherStatusCard(
+                              windSpeed: _metarData!['wind_speed']['value'],
+                              windDifference: _windDifference,
+                              takeoffStatus: _takeoffStatus!,
+                              estimatedCalmTime: _estimatedCalmTime,
+                              metarData:
+                                  _metarData, // Ensure this is passed correctly
+                              latestFlightLog:
+                                  _latestFlightLog, // Ensure this is passed correctly
+                            ),
+                        ],
+                      ),
+                    ),
+                  ],
                 ),
               )
-            : Text(AppLocalizations.of(context)?.translate('no_flight_logs_available') ?? 'No flight logs available.'),
+            : Text(AppLocalizations.of(context)
+                    ?.translate('no_flight_logs_available') ??
+                'No flight logs available.'),
       ),
+      bottomNavigationBar: BottomNavigationBar(
+        items:  [
+          BottomNavigationBarItem(
+            icon:const Icon(Icons.add),
+            label: AppLocalizations.of(context)
+                    ?.translate('add') ??
+                'Add',
+          ),
+          BottomNavigationBarItem(
+            icon:const Icon(Icons.view_list),
+            label: AppLocalizations.of(context)
+                    ?.translate('view_logs') ??
+                'View Logs',
+          ),
+          BottomNavigationBarItem(
+            icon:const Icon(Icons.airplanemode_active),
+            label: AppLocalizations.of(context)
+                    ?.translate('aircraft') ??
+                'Aircraft',
+          ),
+        ],
+        selectedItemColor: Colors.deepPurple,
+        onTap: (index) {
+          switch (index) {
+            case 0:
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                    builder: (context) =>  AddFlightLogPage(lastFlightLog: _latestFlightLog,)),
+              ).then((_) => _fetchLatestFlightLog());
+              break;
+            case 1:
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                    builder: (context) => const ViewFlightLogsPage()),
+              ).then((_) => _fetchLatestFlightLog());
+              break;
+            case 2:
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                    builder: (context) => const AircraftListPage()),
+              );
+              break;
+          }
+        },
+      ),
+    );
+  }
+}
+
+class WeatherStatusCard extends StatelessWidget {
+  final int windSpeed;
+  final int? windDifference;
+  final String takeoffStatus;
+  final String? estimatedCalmTime;
+  final Map<String, dynamic>? metarData;
+  final FlightLog? latestFlightLog;
+
+  const WeatherStatusCard({
+    super.key,
+    required this.windSpeed,
+    this.windDifference,
+    required this.takeoffStatus,
+    this.estimatedCalmTime,
+    this.metarData,
+    this.latestFlightLog,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      children: [
+        Text(
+          '${AppLocalizations.of(context)?.translate('wind_speed') ?? "Wind Speed"}: $windSpeed knots',
+          style: TextStyle(
+            fontSize: 18,
+            fontWeight: FontWeight.bold,
+            color: windDifference != null && windDifference! > 0
+                ? Colors.red[300]
+                : Colors.green[300],
+          ),
+        ),
+        SizedBox(height: 10),
+        TextButton(
+          onPressed: metarData != null && latestFlightLog != null
+              ? () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => DetailedMetarPage(
+                        airportCode: latestFlightLog!.arrivalAirport,
+                        metarData: metarData!,
+                      ),
+                    ),
+                  );
+                }
+              : null,
+          child: Text(
+            AppLocalizations.of(context)?.translate('view_detailed_metar') ??
+                'View Detailed METAR',
+            style: const TextStyle(
+                fontSize: 16,
+                color: Colors.blueAccent,
+                decoration: TextDecoration.underline),
+          ),
+        ),
+        SizedBox(height: 10),
+        Text(
+          takeoffStatus,
+          style: TextStyle(fontSize: 16, color: Colors.white),
+        ),
+        if (estimatedCalmTime != null)
+          Padding(
+            padding: const EdgeInsets.only(top: 8.0),
+            child: Text(
+              estimatedCalmTime!,
+              style: TextStyle(fontSize: 16, color: Colors.yellowAccent),
+            ),
+          ),
+      ],
     );
   }
 }

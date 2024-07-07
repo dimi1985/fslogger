@@ -6,7 +6,8 @@ import 'package:fslogger/models/aircraft.dart';
 import 'package:fslogger/utils/applocalizations.dart'; // Ensure you have localization setup
 
 class AddAircraftPage extends StatefulWidget {
-  const AddAircraftPage({super.key});
+  final Aircraft? aircraft;
+  const AddAircraftPage({super.key, this.aircraft});
 
   @override
   _AddAircraftPageState createState() => _AddAircraftPageState();
@@ -45,39 +46,68 @@ class _AddAircraftPageState extends State<AddAircraftPage> {
 
   final AircraftDatabaseHelper _databaseHelper = AircraftDatabaseHelper();
 
-  void _saveAircraft() async {
-    if (_formKey.currentState!.validate()) {
-      final Aircraft aircraft = Aircraft(
-        type: _typeController.text,
-        rateOfClimb: double.tryParse(_rateOfClimbController.text) ?? 0,
-        maxSpeed: double.tryParse(_maxSpeedController.text) ?? 0,
-        normalCruiseSpeed:
-            double.tryParse(_normalCruiseSpeedController.text) ?? 0,
-        maxTakeoffWeight:
-            double.tryParse(_maxTakeoffWeightController.text) ?? 0,
-        operatingWeight: double.tryParse(_operatingWeightController.text) ?? 0,
-        emptyWeight: double.tryParse(_emptyWeightController.text) ?? 0,
-        fuelCapacity: double.tryParse(_fuelCapacityController.text) ?? 0,
-        payloadUseful: double.tryParse(_payloadUsefulController.text) ?? 0,
-        payloadWithFullFuel:
-            double.tryParse(_payloadWithFullFuelController.text) ?? 0,
-        maxPayload: double.tryParse(_maxPayloadController.text) ?? 0,
-        serviceCeiling: double.tryParse(_serviceCeilingController.text) ?? 0,
-        takeoffDistance: double.tryParse(_takeoffDistanceController.text) ?? 0,
-        balancedFieldLength:
-            double.tryParse(_balancedFieldLengthController.text) ?? 0,
-        landingDistance: double.tryParse(_landingDistanceController.text) ?? 0,
-        range: double.tryParse(_rangeController.text) ?? 0,
-        maxCrosswindComponent:
-            double.tryParse(_maxCrosswindController.text) ?? 0,
-        maxTailwindComponent: double.tryParse(_maxTailwindController.text) ?? 0,
-        maxWindGusts: double.tryParse(_maxWindGustsController.text) ?? 0,
-      );
-
-      await _databaseHelper.insertAircraft(aircraft);
-      Navigator.pop(context);
-    }
+  @override
+void initState() {
+  super.initState();
+  if (widget.aircraft != null) {
+    _typeController.text = widget.aircraft!.type;
+    _rateOfClimbController.text = widget.aircraft!.rateOfClimb.toString();
+    _maxSpeedController.text = widget.aircraft!.maxSpeed.toString();
+    _normalCruiseSpeedController.text = widget.aircraft!.normalCruiseSpeed.toString();
+    _maxTakeoffWeightController.text = widget.aircraft!.maxTakeoffWeight.toString();
+    _operatingWeightController.text = widget.aircraft!.operatingWeight.toString();
+    _emptyWeightController.text = widget.aircraft!.emptyWeight.toString();
+    _fuelCapacityController.text = widget.aircraft!.fuelCapacity.toString();
+    _payloadUsefulController.text = widget.aircraft!.payloadUseful.toString();
+    _payloadWithFullFuelController.text = widget.aircraft!.payloadWithFullFuel.toString();
+    _maxPayloadController.text = widget.aircraft!.maxPayload.toString();
+    _serviceCeilingController.text = widget.aircraft!.serviceCeiling.toString();
+    _takeoffDistanceController.text = widget.aircraft!.takeoffDistance.toString();
+    _balancedFieldLengthController.text = widget.aircraft!.balancedFieldLength.toString();
+    _landingDistanceController.text = widget.aircraft!.landingDistance.toString();
+    _rangeController.text = widget.aircraft!.range.toString();
+    _maxCrosswindController.text = widget.aircraft!.maxCrosswindComponent.toString();
+    _maxTailwindController.text = widget.aircraft!.maxTailwindComponent.toString();
+    _maxWindGustsController.text = widget.aircraft!.maxWindGusts.toString();
   }
+}
+
+
+  void _saveAircraft() async {
+  if (_formKey.currentState!.validate()) {
+    final Aircraft aircraft = Aircraft(
+      id: widget.aircraft?.id, // Use the existing ID if in edit mode
+      type: _typeController.text,
+      rateOfClimb: double.tryParse(_rateOfClimbController.text) ?? 0,
+      maxSpeed: double.tryParse(_maxSpeedController.text) ?? 0,
+      normalCruiseSpeed: double.tryParse(_normalCruiseSpeedController.text) ?? 0,
+      maxTakeoffWeight: double.tryParse(_maxTakeoffWeightController.text) ?? 0,
+      operatingWeight: double.tryParse(_operatingWeightController.text) ?? 0,
+      emptyWeight: double.tryParse(_emptyWeightController.text) ?? 0,
+      fuelCapacity: double.tryParse(_fuelCapacityController.text) ?? 0,
+      payloadUseful: double.tryParse(_payloadUsefulController.text) ?? 0,
+      payloadWithFullFuel: double.tryParse(_payloadWithFullFuelController.text) ?? 0,
+      maxPayload: double.tryParse(_maxPayloadController.text) ?? 0,
+      serviceCeiling: double.tryParse(_serviceCeilingController.text) ?? 0,
+      takeoffDistance: double.tryParse(_takeoffDistanceController.text) ?? 0,
+      balancedFieldLength: double.tryParse(_balancedFieldLengthController.text) ?? 0,
+      landingDistance: double.tryParse(_landingDistanceController.text) ?? 0,
+      range: double.tryParse(_rangeController.text) ?? 0,
+      maxCrosswindComponent: double.tryParse(_maxCrosswindController.text) ?? 0,
+      maxTailwindComponent: double.tryParse(_maxTailwindController.text) ?? 0,
+      maxWindGusts: double.tryParse(_maxWindGustsController.text) ?? 0,
+    );
+
+    // Call update if editing or insert if adding a new entry
+    if (widget.aircraft != null) {
+      await _databaseHelper.updateAircraft(aircraft);
+    } else {
+      await _databaseHelper.insertAircraft(aircraft);
+    }
+    Navigator.pop(context);
+  }
+}
+
 
   @override
   Widget build(BuildContext context) {

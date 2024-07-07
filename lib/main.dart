@@ -29,6 +29,12 @@ void main() async {
         "pilotvision-aa506.appspot.com", // Storage bucket from your JSON
   );
 
+ // Initialize Firebase
+  await Firebase.initializeApp(
+    options: firebaseOptions,
+  );
+
+
   var settingsModel = SettingsModel();
   await settingsModel.loadPreferences();
 
@@ -37,10 +43,7 @@ void main() async {
     await syncData(); // Your function to sync data
   }
 
-  // Initialize Firebase
-  await Firebase.initializeApp(
-    options: firebaseOptions,
-  );
+  
 
   runApp(
     MultiProvider(

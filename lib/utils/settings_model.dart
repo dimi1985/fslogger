@@ -10,8 +10,12 @@ class SettingsModel extends ChangeNotifier {
   String get language => _language;
   bool get defaultDynamicMode => _defaultDynamicMode;
 
-   int _syncPreference = 0; // 0 = Auto, 1 = Manual, 2 = Periodic
-    int get syncPreference => _syncPreference;
+  int _syncPreference = 0; // 0 = Auto, 1 = Manual, 2 = Periodic
+  int get syncPreference => _syncPreference;
+
+  bool _screenAwake = false;
+
+  bool get screenAwake => _screenAwake;
 
   SettingsModel() {
     loadPreferences();
@@ -35,12 +39,19 @@ class SettingsModel extends ChangeNotifier {
     savePreferences();
   }
 
+  void toggleScreenAwake(bool value) async {
+    _screenAwake = value;
+    notifyListeners();
+    await savePreferences();
+  }
+
   Future<void> loadPreferences() async {
     final SharedPreferences prefs = await SharedPreferences.getInstance();
     _darkTheme = prefs.getBool('darkTheme') ?? false;
     _language = prefs.getString('language') ?? 'English';
     _defaultDynamicMode = prefs.getBool('defaultDynamicMode') ?? true;
     _syncPreference = prefs.getInt('syncPreference') ?? 0;
+    _screenAwake = prefs.getBool('screenAwake') ?? false;
     notifyListeners();
   }
 
@@ -49,6 +60,7 @@ class SettingsModel extends ChangeNotifier {
     await prefs.setBool('darkTheme', _darkTheme);
     await prefs.setString('language', _language);
     await prefs.setBool('defaultDynamicMode', _defaultDynamicMode);
+    await prefs.setBool('screenAwake', _screenAwake);
   }
 
   Future<void> saveSyncPreference(int preference) async {
